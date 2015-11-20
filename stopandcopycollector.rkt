@@ -22,7 +22,7 @@
 
 (define (gc:cons f r)
   (begin
-    (when (not (have-space? 3 f r))
+    (when (not (have-space? 3))
       (error 'gc:cons "out of memory"))
     (heap-set! heap-ptr 'cons)
     (heap-set! (+ 1 heap-ptr) f)
@@ -69,7 +69,6 @@
   (if (<= needed-space (space-left))
     true
     (begin
-      (print "Passing Value: ")
       (stopandcopy)
       (<= needed-space (space-left)))))
 
@@ -94,23 +93,33 @@
 ; Purpose: Copies the items from one heap to the next one.
 (define (copyover l)
   (begin
-    (println "Starting map call")
     (map (lambda (root)
       (let ([root-loc (read-root root)])
-        (cond
-          [(gc:flat? root-loc)
-            (begin
-              (if (gc:procedure? root-loc)
-                ; (copyover (procedure-roots (gc:deref root))) <---might be a possibility
-                (println "copying procedure...")
-                (set-root! root (gc:alloc-flat (gc:deref root-loc)))))]
-          [(gc:cons? root-loc)
-            (begin
-              (println "entered gc:cons?")
-              (set-root! root (gc:cons (gc:first root-loc) (gc:rest root-loc))))])))
+        (set-root! root (copy-single root-loc))))
       l)
-    (do-cheneys)))
+    (do-cheneys fromspace-ptr)))
 
-(define (do-cheneys)
-  (println "doing-cheneys"))
+; Contract: (copy-single loc) -> location?
+; Purpose: Copies the single item to the next heap. Returns the new location of that item
+(define (copy-single loc)
+  (cond
+    [(gc:flat? loc)
+      (begin
+        (when (gc:procedure? loc)
+          (copyover (procedure-roots (heap-ref (+ 1 loc)))))
+        (gc:alloc-flat (gc:deref loc)))]
+    [(gc:cons? loc)
+      (gc:cons (gc:first loc) (gc:rest loc))]))
+
+; Contract: (do-cheneys scan) -> (void)
+; Purpose: Implements cheney's algorithm: scans through the heap for any objects still referenced in the other space.
+(define (do-cheneys scan)
+  (if (= scan heap-ptr)
+    (void)
+    (if (gc:cons? scan)
+      (begin
+        (heap-set! (+ 1 scan) (copy-single (heap-ref (+ 1 scan))))
+        (heap-set! (+ 2 scan) (copy-single (heap-ref (+ 2 scan))))
+        (do-cheneys (+ 3 scan)))
+      (do-cheneys (+ 2 scan)))))
 
