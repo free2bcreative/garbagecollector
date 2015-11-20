@@ -22,7 +22,7 @@
 
 (define (gc:cons f r)
   (begin
-    (when (not (have-space? 3))
+    (when (not (have-space? 3 f r))
       (error 'gc:cons "out of memory"))
     (heap-set! heap-ptr 'cons)
     (heap-set! (+ 1 heap-ptr) f)
@@ -69,6 +69,7 @@
   (if (<= needed-space (space-left))
     true
     (begin
+      (print "Passing Value: ")
       (stopandcopy)
       (<= needed-space (space-left)))))
 
@@ -78,6 +79,38 @@
   (- (/ (heap-size) 2)
     (- heap-ptr fromspace-ptr)))
 
-
+; Contract: (stopandcopy) -> void
+; Purpose: Performs the stop and copy algorithm for this heap.
 (define (stopandcopy)
-  (println "stopandcopy processing"))
+  (begin
+    (set! heap-ptr tospace-ptr)
+    (let ([temp tospace-ptr])
+      (begin
+        (set! tospace-ptr fromspace-ptr)
+        (set! fromspace-ptr temp)))
+    (copyover (get-root-set))))
+
+; Contract: (copyover l) -> void
+; Purpose: Copies the items from one heap to the next one.
+(define (copyover l)
+  (begin
+    (println "Starting map call")
+    (map (lambda (root)
+      (let ([root-loc (read-root root)])
+        (cond
+          [(gc:flat? root-loc)
+            (begin
+              (if (gc:procedure? root-loc)
+                ; (copyover (procedure-roots (gc:deref root))) <---might be a possibility
+                (println "copying procedure...")
+                (set-root! root (gc:alloc-flat (gc:deref root-loc)))))]
+          [(gc:cons? root-loc)
+            (begin
+              (println "entered gc:cons?")
+              (set-root! root (gc:cons (gc:first root-loc) (gc:rest root-loc))))])))
+      l)
+    (do-cheneys)))
+
+(define (do-cheneys)
+  (println "doing-cheneys"))
+
