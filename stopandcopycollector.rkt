@@ -10,7 +10,6 @@
     (set! fromspace-ptr 0)
     (set! tospace-ptr (/ (heap-size) 2))))
   
-; called when creating a prim (includes procedures)
 (define (gc:alloc-flat p)
   (begin
     (when (not (have-space? 2))
@@ -51,7 +50,14 @@
   (eq? (heap-ref a) 'prim))
 
 (define (gc:deref a)
-  (heap-ref (+ 1 a)))
+  (if (gc:flat? a)
+    (heap-ref (+ 1 a))
+    (error "gc:deref: Bad type. Expected primative")))
+
+; Contract: (gc:moved? a) -> boolean
+; Purpose: checks if 'a' is pointing to something with 'moved symbol
+(define (gc:moved? a)
+  (eq? (heap-ref a) 'moved))
 
 ; Contract: (gc:procedure? a) -> boolean
 ;             a: location?
@@ -89,13 +95,15 @@
         (set! fromspace-ptr temp)))
     (copyover (get-root-set))))
 
+
+
 ; Contract: (copyover l) -> void
 ; Purpose: Copies the items from one heap to the next one.
 (define (copyover l)
   (begin
     (map (lambda (root)
       (let ([root-loc (read-root root)])
-        (set-root! root (copy-single root-loc))))
+          (set-root! root (copy-single root-loc))))
       l)
     (do-cheneys fromspace-ptr)))
 
@@ -103,19 +111,29 @@
 ; Purpose: Copies the single item to the next heap. Returns the new location of that item
 (define (copy-single loc)
   (cond
+    [(gc:moved? loc)
+      (heap-ref (+ 1 loc))]
     [(gc:flat? loc)
       (begin
         (when (gc:procedure? loc)
-          (copyover (procedure-roots (heap-ref (+ 1 loc)))))
-        (gc:alloc-flat (gc:deref loc)))]
+            (copyover (procedure-roots (heap-ref (+ 1 loc)))))
+        (set-moved loc (gc:alloc-flat (gc:deref loc))))]
     [(gc:cons? loc)
-      (gc:cons (gc:first loc) (gc:rest loc))]))
+      (set-moved loc (gc:cons (gc:first loc) (gc:rest loc)))]))
+
+; Contract: (set-moved old-loc new-loc) -> number
+; Purpose: Sets 'moved on old-loc along with new location in the next slot. Returns new-loc.
+(define (set-moved old-loc new-loc)
+  (begin
+    (heap-set! old-loc 'moved)
+    (heap-set! (+ 1 old-loc) new-loc)
+    new-loc))
 
 ; Contract: (do-cheneys scan) -> (void)
 ; Purpose: Implements cheney's algorithm: scans through the heap for any objects still referenced in the other space.
 (define (do-cheneys scan)
   (if (= scan heap-ptr)
-    (void)
+    (println "finished scan")
     (if (gc:cons? scan)
       (begin
         (heap-set! (+ 1 scan) (copy-single (heap-ref (+ 1 scan))))
