@@ -12,7 +12,7 @@
   
 (define (gc:alloc-flat p)
   (begin
-    (when (not (have-space? 2))
+    (when (not (have-space? 2 (get-root-set)))
       (error 'gc:alloc-flat "out of memory"))
     (heap-set! heap-ptr 'prim)
     (heap-set! (+ 1 heap-ptr) p)
@@ -21,7 +21,7 @@
 
 (define (gc:cons f r)
   (begin
-    (when (not (have-space? 3))
+    (when (not (have-space? 3 (get-root-set f r)))
       (error 'gc:cons "out of memory"))
     (heap-set! heap-ptr 'cons)
     (heap-set! (+ 1 heap-ptr) f)
@@ -77,11 +77,11 @@
 ;             p : number
 ; Purpose: check to see if we have enough space left in the (from) heap
 ;   if not enough space, stop and copy is called. If still no space, return false
-(define (have-space? needed-space)
+(define (have-space? needed-space roots)
   (if (<= needed-space (space-left))
     true
     (begin
-      (stopandcopy)
+      (stopandcopy roots)
       (<= needed-space (space-left)))))
 
 ; Contract: (space-left) -> number
@@ -92,14 +92,14 @@
 
 ; Contract: (stopandcopy) -> void
 ; Purpose: Performs the stop and copy algorithm for this heap.
-(define (stopandcopy)
+(define (stopandcopy roots)
   (begin
     (set! heap-ptr tospace-ptr)
     (let ([temp tospace-ptr])
       (begin
         (set! tospace-ptr fromspace-ptr)
         (set! fromspace-ptr temp)))
-    (copyover (get-root-set))))
+    (copyover roots)))
 
 
 
@@ -139,7 +139,7 @@
 ; Purpose: Implements cheney's algorithm: scans through the heap for any objects still referenced in the other space.
 (define (do-cheneys scan)
   (if (= scan heap-ptr)
-    (println "finished scan")
+    (void)
     (if (gc:cons? scan)
       (begin
         (heap-set! (+ 1 scan) (copy-single (heap-ref (+ 1 scan))))
