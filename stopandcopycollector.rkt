@@ -33,10 +33,14 @@
   (eq? (heap-ref a) 'cons))
 
 (define (gc:first a)
-  (heap-ref (+ 1 a)))
+  (if (gc:cons? a)
+      (heap-ref (+ 1 a))
+      (error 'gc:first "expects address of cons")))
 
 (define (gc:rest a)
-  (heap-ref (+ 2 a)))
+  (if (gc:cons? a)
+      (heap-ref (+ 2 a))
+      (error 'gc:rest "expects address of cons")))
 
 (define (gc:set-first! a f)
   (if (gc:cons? a)
@@ -44,7 +48,9 @@
       (error 'set-first! "expects address of cons")))
 
 (define (gc:set-rest! a r)
-  (heap-set! (+ 2 a) r))
+  (if (gc:cons? a)
+      (heap-set! (+ 2 a) r)
+      (error 'set-rest! "expects address of cons")))
 
 (define (gc:flat? a)
   (eq? (heap-ref a) 'prim))

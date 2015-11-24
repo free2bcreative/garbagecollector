@@ -41,24 +41,32 @@
   (eq? (heap-ref a) 'cons))
  
 (define (gc:first a)
- (heap-ref (+ 1 a)))
+  (if (gc:cons? a)
+      (heap-ref (+ 2 a))
+      (error 'gc:first "expects address of cons")))
  
 (define (gc:rest a)
- (heap-ref (+ 2 a)))
+  (if (gc:cons? a)
+      (heap-ref (+ 3 a))
+      (error 'gc:rest "expects address of cons")))
  
 (define (gc:set-first! a f)
  (if (gc:cons? a)
-     (heap-set! (+ 1 a) f)
+     (heap-set! (+ 2 a) f)
      (error 'set-first! "expects address of cons")))
  
 (define (gc:set-rest! a r)
- (heap-set! (+ 2 a) r))
+ (if (gc:cons? a)
+     (heap-set! (+ 3 a) r)
+     (error 'set-rest! "expects address of cons")))
  
 (define (gc:flat? a)
   (eq? (heap-ref a) 'prim))
  
 (define (gc:deref a)
- (heap-ref (+ 1 a)))
+ (if (gc:flat? a)
+     (heap-ref (+ 2 a))
+     (error 'deref! "expects address of flat")))
 
 (define (get-free-block needed-size)
   (begin
@@ -171,6 +179,7 @@
              (heap-set! next 'free)
              (heap-set! (+ next 2) (unbox free-list))
              (set-box! free-list next)
+             
              (sweep-helper next (+ next (heap-ref (+ next 1))))))]
       [(gc:cons? next)
        (if (eq? (heap-ref (+ next 4)) 'marked)
@@ -180,3 +189,14 @@
              (heap-set! (+ next 2) (unbox free-list))
              (set-box! free-list next)
              (sweep-helper next (+ next (heap-ref (+ next 1))))))])))
+
+;(define (coalesce prev cur)
+;  (begin
+;    (define next (+ cur (heap-ref (+ cur 1))))
+;    (when (< next (heap-size))
+;      (when (eq? (heap-ref next) 'free)
+;        (heap-set! (+ cur 1) (+ (heap-ref (+ cur 1)) (heap-ref (+ next 1))))
+;        (heap-set! (
+        
+          
+      
