@@ -1,0 +1,32 @@
+Assignment: Garbage Collectors
+Name: <insert your name here>
+
+Instructions: 
+* Open this file in DrRacket (or your favorite plain-text editor) and add your answers 
+  at the end of each line for each question. If you want to add more explanation or 
+  justification, you may add one or more lines under the question.  Remember to add 
+  your name as well.  Once complete, submit this to Learning Suite as a plain text file.
+* For each of the questions, indicate Yes (Y) or No (N).
+* If you need to add any more explanation of justification, just add it on a line
+  underneath the respective question.
+
+Mark&Sweep
+
+ * Does the code obey the coding style guidlines?
+ * Does it maintain and allocate using a free list?
+ * Does it coalesce adjacent free blocks?
+ * Does it deal with cycles through all structures correctly?
+ * Does it deal correctly with procedure roots?
+ * Does it deal correctly with additional roots (first, rest, procedure) in all places?
+ * Is it basically correct otherwise?
+
+Stop&Copy
+
+ * Does the code obey the coding style guidlines? (Y) *(We did not put purpose or contract statements on the preexisting code)
+ * Does the copy phase correctly use Cheney's algorithm? (Y)
+ * Does it avoid copying already-copied objects? (Y)
+ * Does it deal correctly with procedure roots? (Y)
+ * Does it deal correctly with additional roots (first, rest, procedure) in all places? (Y)
+ * Is it basically correct otherwise? (Y)
+	
+

@@ -2,10 +2,19 @@
 
 (allocator-setup "stopandcopycollector.rkt" 30)
 
-(define alist (cons 1 empty))
-(define blist (cons 0 alist))
-(+ 1 2)
-(+ 1 2)
+
+;(define alist (cons 1 (cons 2 empty)))
+;(define alist (cons 2 empty))
+;(define extendedlist (cons 1 alist))
+
+(define (test x)
+  (lambda (a)
+    (+ a x)))
+
+(define add10 (test 10))
+
+
+
 
 
 ;(define alist (cons 1 (cons 2 empty)))
